@@ -38,21 +38,27 @@ pipeline {
                     
                     # Verify file was created
                     if (Test-Path $filePath) {
-                        Write-Host "Credentials file created successfully"
+                        Write-Host "Credentials file created successfully at: $filePath"
                     } else {
                         throw "Failed to create credentials file"
                     }
                     
-                    # Distribute to Firebase with explicit credentials path
+                    # Set the environment variable and distribute in the same command
+                    $env:GOOGLE_APPLICATION_CREDENTIALS = $filePath
+                    
+                    Write-Host "Using credentials from: $env:GOOGLE_APPLICATION_CREDENTIALS"
+                    
+                    # Distribute to Firebase
                     firebase appdistribution:distribute build\\app\\outputs\\flutter-apk\\app-release.apk `
                         --app $env:FIREBASE_APP_ID `
                         --release-notes "New APK build from Jenkins!" `
-                        --groups $env:FIREBASE_TESTER_GROUP `
-                        --service-account-json-path $filePath
+                        --groups $env:FIREBASE_TESTER_GROUP
                     
                     if ($LASTEXITCODE -ne 0) {
                         throw "Firebase distribution failed with exit code $LASTEXITCODE"
                     }
+                    
+                    Write-Host "APK distributed successfully!"
                     
                     # Clean up
                     Remove-Item -Path $filePath -Force -ErrorAction SilentlyContinue
@@ -75,24 +81,32 @@ pipeline {
                     $json = $env:FIREBASE_CREDENTIALS
                     $filePath = "$env:TEMP\\firebase-credentials.json"
                     
+                    # Write the JSON to file
                     Set-Content -Path $filePath -Value $json -Encoding UTF8 -NoNewline
                     
+                    # Verify file was created
                     if (Test-Path $filePath) {
-                        Write-Host "Credentials file created successfully"
+                        Write-Host "Credentials file created successfully at: $filePath"
                     } else {
                         throw "Failed to create credentials file"
                     }
                     
-                    # Distribute to Firebase with explicit credentials path
+                    # Set the environment variable and distribute in the same command
+                    $env:GOOGLE_APPLICATION_CREDENTIALS = $filePath
+                    
+                    Write-Host "Using credentials from: $env:GOOGLE_APPLICATION_CREDENTIALS"
+                    
+                    # Distribute to Firebase
                     firebase appdistribution:distribute build\\app\\outputs\\bundle\\release\\app-release.aab `
                         --app $env:FIREBASE_APP_ID `
                         --release-notes "New AAB build from Jenkins!" `
-                        --groups $env:FIREBASE_TESTER_GROUP `
-                        --service-account-json-path $filePath
+                        --groups $env:FIREBASE_TESTER_GROUP
                     
                     if ($LASTEXITCODE -ne 0) {
                         throw "Firebase distribution failed with exit code $LASTEXITCODE"
                     }
+                    
+                    Write-Host "AAB distributed successfully!"
                     
                     # Clean up
                     Remove-Item -Path $filePath -Force -ErrorAction SilentlyContinue
