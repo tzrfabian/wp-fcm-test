@@ -82,7 +82,13 @@ pipeline {
 
     post {
         always {
-            cleanWs()
+            script {
+                if (!isUnix()) {
+                    echo "Skipping workspace cleanup on Windows to avoid file locking issues"
+                } else {
+                    cleanWs()
+                }
+            }
         }
     }
 }
