@@ -1,3 +1,6 @@
+// Jenkinsfile for Windows - Flutter App Building and Firebase Distribution
+// Use this version if you're running Jenkins on Windows
+
 pipeline {
     agent any
 
@@ -18,26 +21,36 @@ pipeline {
 
         stage('Setup Flutter') {
             steps {
-                // Ensure Flutter SDK is in the PATH or provide the full path
-                sh 'flutter clean'
-                sh 'flutter pub get'
+                // Use 'bat' instead of 'sh' for Windows
+                bat 'flutter clean'
+                bat 'flutter pub get'
             }
         }
 
         stage('Build APK') {
             steps {
-                sh 'flutter build apk --release'
+                bat 'flutter build apk --release'
             }
         }
 
         stage('Distribute APK to Firebase') {
             steps {
-                withCredentials([file(credentialsId: 'firebase-service-account-key', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
-                    sh '''
-                    firebase appdistribution:distribute build/app/outputs/flutter-apk/app-release.apk \
-                        --app ${FIREBASE_APP_ID} \
-                        --release-notes "New APK build from Jenkins!" \
-                        --groups "${FIREBASE_TESTER_GROUP}"
+                withCredentials([string(credentialsId: 'firebase-service-account-json', variable: 'FIREBASE_CREDENTIALS')]) {
+                    bat '''
+                    REM Create a temporary file with the Firebase credentials
+                    echo %FIREBASE_CREDENTIALS% > %TEMP%\\firebase-credentials.json
+                    
+                    REM Set the environment variable for Firebase CLI
+                    set GOOGLE_APPLICATION_CREDENTIALS=%TEMP%\\firebase-credentials.json
+                    
+                    REM Distribute the APK
+                    firebase appdistribution:distribute build\\app\\outputs\\flutter-apk\\app-release.apk ^
+                        --app %FIREBASE_APP_ID% ^
+                        --release-notes "New APK build from Jenkins!" ^
+                        --groups "%FIREBASE_TESTER_GROUP%"
+                    
+                    REM Clean up the temporary file
+                    del %TEMP%\\firebase-credentials.json
                     '''
                 }
             }
@@ -45,18 +58,28 @@ pipeline {
 
         stage('Build AAB') {
             steps {
-                sh 'flutter build appbundle --release'
+                bat 'flutter build appbundle --release'
             }
         }
 
         stage('Distribute AAB to Firebase') {
             steps {
-                withCredentials([file(credentialsId: 'firebase-service-account-key', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
-                    sh '''
-                    firebase appdistribution:distribute build/app/outputs/bundle/release/app-release.aab \
-                        --app ${FIREBASE_APP_ID} \
-                        --release-notes "New AAB build from Jenkins!" \
-                        --groups "${FIREBASE_TESTER_GROUP}"
+                withCredentials([string(credentialsId: 'firebase-service-account-json', variable: 'FIREBASE_CREDENTIALS')]) {
+                    bat '''
+                    REM Create a temporary file with the Firebase credentials
+                    echo %FIREBASE_CREDENTIALS% > %TEMP%\\firebase-credentials.json
+                    
+                    REM Set the environment variable for Firebase CLI
+                    set GOOGLE_APPLICATION_CREDENTIALS=%TEMP%\\firebase-credentials.json
+                    
+                    REM Distribute the AAB
+                    firebase appdistribution:distribute build\\app\\outputs\\bundle\\release\\app-release.aab ^
+                        --app %FIREBASE_APP_ID% ^
+                        --release-notes "New AAB build from Jenkins!" ^
+                        --groups "%FIREBASE_TESTER_GROUP%"
+                    
+                    REM Clean up the temporary file
+                    del %TEMP%\\firebase-credentials.json
                     '''
                 }
             }
