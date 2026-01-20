@@ -29,29 +29,31 @@ pipeline {
         stage('Distribute APK to Firebase') {
             steps {
                 withCredentials([string(credentialsId: 'firebase-service-account-json', variable: 'FIREBASE_CREDENTIALS')]) {
-                    bat '''
-                    REM Create the credentials file
-                    echo %FIREBASE_CREDENTIALS% > %TEMP%\\firebase-credentials.json
+                    powershell '''
+                    $json = $env:FIREBASE_CREDENTIALS
+                    $filePath = "$env:TEMP\\firebase-credentials.json"
                     
-                    REM Debug: Check if file was created
-                    if exist %TEMP%\\firebase-credentials.json (
-                        echo File created successfully
-                        type %TEMP%\\firebase-credentials.json
-                    ) else (
-                        echo ERROR: File was not created!
-                    )
+                    # Write the JSON to file
+                    Set-Content -Path $filePath -Value $json -Encoding UTF8 -NoNewline
                     
-                    REM Set the environment variable
-                    set GOOGLE_APPLICATION_CREDENTIALS=%TEMP%\\firebase-credentials.json
+                    # Verify file was created
+                    if (Test-Path $filePath) {
+                        Write-Host "Credentials file created successfully"
+                    } else {
+                        throw "Failed to create credentials file"
+                    }
                     
-                    REM Try to distribute
-                    firebase appdistribution:distribute build\\app\\outputs\\flutter-apk\\app-release.apk ^
-                        --app %FIREBASE_APP_ID% ^
-                        --release-notes "New APK build from Jenkins!" ^
-                        --groups "%FIREBASE_TESTER_GROUP%"
+                    # Set environment variable
+                    $env:GOOGLE_APPLICATION_CREDENTIALS = $filePath
                     
-                    REM Clean up
-                    del %TEMP%\\firebase-credentials.json
+                    # Distribute to Firebase
+                    & firebase appdistribution:distribute build\\app\\outputs\\flutter-apk\\app-release.apk `
+                        --app $env:FIREBASE_APP_ID `
+                        --release-notes "New APK build from Jenkins!" `
+                        --groups $env:FIREBASE_TESTER_GROUP
+                    
+                    # Clean up
+                    Remove-Item -Path $filePath -Force -ErrorAction SilentlyContinue
                     '''
                 }
             }
@@ -67,20 +69,31 @@ pipeline {
         stage('Distribute AAB to Firebase') {
             steps {
                 withCredentials([string(credentialsId: 'firebase-service-account-json', variable: 'FIREBASE_CREDENTIALS')]) {
-                    bat '''
-                    echo %FIREBASE_CREDENTIALS% > %TEMP%\\firebase-credentials.json
-                    set GOOGLE_APPLICATION_CREDENTIALS=%TEMP%\\firebase-credentials.json
+                    powershell '''
+                    $json = $env:FIREBASE_CREDENTIALS
+                    $filePath = "$env:TEMP\\firebase-credentials.json"
                     
-                    firebase appdistribution:distribute build\\app\\outputs\\bundle\\release\\app-release.aab ^
-                        --app %FIREBASE_APP_ID% ^
-                        --release-notes "New AAB build from Jenkins!" ^
-                        --groups "%FIREBASE_TESTER_GROUP%"
+                    Set-Content -Path $filePath -Value $json -Encoding UTF8 -NoNewline
                     
-                    del %TEMP%\\firebase-credentials.json
+                    if (Test-Path $filePath) {
+                        Write-Host "Credentials file created successfully"
+                    } else {
+                        throw "Failed to create credentials file"
+                    }
+                    
+                    $env:GOOGLE_APPLICATION_CREDENTIALS = $filePath
+                    
+                    & firebase appdistribution:distribute build\\app\\outputs\\bundle\\release\\app-release.aab `
+                        --app $env:FIREBASE_APP_ID `
+                        --release-notes "New AAB build from Jenkins!" `
+                        --groups $env:FIREBASE_TESTER_GROUP
+                    
+                    Remove-Item -Path $filePath -Force -ErrorAction SilentlyContinue
                     '''
                 }
             }
         }
+
     }
 
     post {
