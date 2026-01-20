@@ -43,14 +43,16 @@ pipeline {
                         throw "Failed to create credentials file"
                     }
                     
-                    # Set environment variable
-                    $env:GOOGLE_APPLICATION_CREDENTIALS = $filePath
-                    
-                    # Distribute to Firebase
-                    & firebase appdistribution:distribute build\\app\\outputs\\flutter-apk\\app-release.apk `
+                    # Distribute to Firebase with explicit credentials path
+                    firebase appdistribution:distribute build\\app\\outputs\\flutter-apk\\app-release.apk `
                         --app $env:FIREBASE_APP_ID `
                         --release-notes "New APK build from Jenkins!" `
-                        --groups $env:FIREBASE_TESTER_GROUP
+                        --groups $env:FIREBASE_TESTER_GROUP `
+                        --service-account-json-path $filePath
+                    
+                    if ($LASTEXITCODE -ne 0) {
+                        throw "Firebase distribution failed with exit code $LASTEXITCODE"
+                    }
                     
                     # Clean up
                     Remove-Item -Path $filePath -Force -ErrorAction SilentlyContinue
@@ -81,13 +83,18 @@ pipeline {
                         throw "Failed to create credentials file"
                     }
                     
-                    $env:GOOGLE_APPLICATION_CREDENTIALS = $filePath
-                    
-                    & firebase appdistribution:distribute build\\app\\outputs\\bundle\\release\\app-release.aab `
+                    # Distribute to Firebase with explicit credentials path
+                    firebase appdistribution:distribute build\\app\\outputs\\bundle\\release\\app-release.aab `
                         --app $env:FIREBASE_APP_ID `
                         --release-notes "New AAB build from Jenkins!" `
-                        --groups $env:FIREBASE_TESTER_GROUP
+                        --groups $env:FIREBASE_TESTER_GROUP `
+                        --service-account-json-path $filePath
                     
+                    if ($LASTEXITCODE -ne 0) {
+                        throw "Firebase distribution failed with exit code $LASTEXITCODE"
+                    }
+                    
+                    # Clean up
                     Remove-Item -Path $filePath -Force -ErrorAction SilentlyContinue
                     '''
                 }
