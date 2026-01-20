@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        FIREBASE_APP_ID = 'wp-fcm-test'
+        FIREBASE_APP_ID = '1:999961822980:android:1d03ab3c4629ddc31f3251'
         FIREBASE_TESTER_GROUP = 'qa-team'
     }
 
