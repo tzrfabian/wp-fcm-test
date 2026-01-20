@@ -28,25 +28,22 @@ pipeline {
 
         stage('Distribute APK to Firebase') {
             steps {
-                withCredentials([string(credentialsId: 'firebase-service-account-json', variable: 'FIREBASE_CREDENTIALS')]) {
+                withCredentials([file(credentialsId: 'firebase-service-account-json', variable: 'FIREBASE_CREDENTIALS_FILE')]) {
                     powershell '''
-                    $json = $env:FIREBASE_CREDENTIALS
-                    $filePath = "$env:TEMP\\firebase-credentials.json"
+                    # Use the credentials file path provided by Jenkins
+                    $credentialsPath = $env:FIREBASE_CREDENTIALS_FILE
                     
-                    # Write the JSON to file
-                    Set-Content -Path $filePath -Value $json -Encoding UTF8 -NoNewline
+                    Write-Host "Using credentials file at: $credentialsPath"
                     
-                    # Verify file was created
-                    if (Test-Path $filePath) {
-                        Write-Host "Credentials file created successfully at: $filePath"
+                    # Verify file exists
+                    if (Test-Path $credentialsPath) {
+                        Write-Host "Credentials file found successfully"
                     } else {
-                        throw "Failed to create credentials file"
+                        throw "Credentials file not found at: $credentialsPath"
                     }
                     
-                    # Set the environment variable and distribute in the same command
-                    $env:GOOGLE_APPLICATION_CREDENTIALS = $filePath
-                    
-                    Write-Host "Using credentials from: $env:GOOGLE_APPLICATION_CREDENTIALS"
+                    # Set the environment variable
+                    $env:GOOGLE_APPLICATION_CREDENTIALS = $credentialsPath
                     
                     # Distribute to Firebase
                     firebase appdistribution:distribute build\\app\\outputs\\flutter-apk\\app-release.apk `
@@ -59,9 +56,6 @@ pipeline {
                     }
                     
                     Write-Host "APK distributed successfully!"
-                    
-                    # Clean up
-                    Remove-Item -Path $filePath -Force -ErrorAction SilentlyContinue
                     '''
                 }
             }
@@ -76,25 +70,22 @@ pipeline {
 
         stage('Distribute AAB to Firebase') {
             steps {
-                withCredentials([string(credentialsId: 'firebase-service-account-json', variable: 'FIREBASE_CREDENTIALS')]) {
+                withCredentials([file(credentialsId: 'firebase-service-account-json', variable: 'FIREBASE_CREDENTIALS_FILE')]) {
                     powershell '''
-                    $json = $env:FIREBASE_CREDENTIALS
-                    $filePath = "$env:TEMP\\firebase-credentials.json"
+                    # Use the credentials file path provided by Jenkins
+                    $credentialsPath = $env:FIREBASE_CREDENTIALS_FILE
                     
-                    # Write the JSON to file
-                    Set-Content -Path $filePath -Value $json -Encoding UTF8 -NoNewline
+                    Write-Host "Using credentials file at: $credentialsPath"
                     
-                    # Verify file was created
-                    if (Test-Path $filePath) {
-                        Write-Host "Credentials file created successfully at: $filePath"
+                    # Verify file exists
+                    if (Test-Path $credentialsPath) {
+                        Write-Host "Credentials file found successfully"
                     } else {
-                        throw "Failed to create credentials file"
+                        throw "Credentials file not found at: $credentialsPath"
                     }
                     
-                    # Set the environment variable and distribute in the same command
-                    $env:GOOGLE_APPLICATION_CREDENTIALS = $filePath
-                    
-                    Write-Host "Using credentials from: $env:GOOGLE_APPLICATION_CREDENTIALS"
+                    # Set the environment variable
+                    $env:GOOGLE_APPLICATION_CREDENTIALS = $credentialsPath
                     
                     # Distribute to Firebase
                     firebase appdistribution:distribute build\\app\\outputs\\bundle\\release\\app-release.aab `
@@ -107,9 +98,6 @@ pipeline {
                     }
                     
                     Write-Host "AAB distributed successfully!"
-                    
-                    # Clean up
-                    Remove-Item -Path $filePath -Force -ErrorAction SilentlyContinue
                     '''
                 }
             }
