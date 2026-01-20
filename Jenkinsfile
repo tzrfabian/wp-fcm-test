@@ -13,20 +13,7 @@ pipeline {
             }
         }
 
-        stage('Create google-services.json') {
-            steps {
-                withCredentials([string(credentialsId: 'google-services-json-content', variable: 'GOOGLE_SERVICES_JSON')]) {
-                    powershell '''
-                    $json = $env:GOOGLE_SERVICES_JSON
-                    $filePath = "android\\app\\google-services.json"
-                    Set-Content -Path $filePath -Value $json -Encoding UTF8
-                    Write-Host "google-services.json created successfully at: $filePath"
-                    '''
-                }
-            }
-        }
-
-        stage('Setup Flutter') {
+        stage('Setup Flutter' ) {
             steps {
                 bat 'flutter clean'
                 bat 'flutter pub get'
