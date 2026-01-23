@@ -56,6 +56,10 @@ pipeline {
                         throw "Credentials file not found at: $credentialsPath"
                     }
                     
+                    # Logout any existing Firebase CLI user sessions
+                    Write-Host "Logging out any existing Firebase CLI sessions..."
+                    firebase logout --force 2>&1 | Out-Null
+                    
                     # Set the environment variable
                     $env:GOOGLE_APPLICATION_CREDENTIALS = $credentialsPath
                     
@@ -113,6 +117,10 @@ pipeline {
                     } else {
                         throw "Credentials file not found at: $credentialsPath"
                     }
+                    
+                    # Logout any existing Firebase CLI user sessions
+                    Write-Host "Logging out any existing Firebase CLI sessions..."
+                    firebase logout --force 2>&1 | Out-Null
                     
                     # Set the environment variable
                     $env:GOOGLE_APPLICATION_CREDENTIALS = $credentialsPath
