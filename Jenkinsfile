@@ -97,12 +97,18 @@ pipeline {
 
 
         stage('Build AAB') {
+            when {
+                expression { return false } // Disabled: AAB distribution requires Google Play Console integration
+            }
             steps {
                 bat 'flutter build appbundle --release'
             }
         }
 
         stage('Distribute AAB to Firebase') {
+            when {
+                expression { return false } // Disabled: AAB distribution requires Google Play Console integration
+            }
             steps {
                 withCredentials([file(credentialsId: 'firebase-service-account-json', variable: 'FIREBASE_CREDENTIALS_FILE')]) {
                     powershell '''
