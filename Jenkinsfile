@@ -63,12 +63,13 @@ pipeline {
                     Write-Host "Firebase App ID: $env:FIREBASE_APP_ID"
                     Write-Host "Tester Group: $env:FIREBASE_TESTER_GROUP"
                     
-                    # Distribute to Firebase
+                    # Distribute to Firebase with service account
                     Write-Host "Starting Firebase distribution..."
                     firebase appdistribution:distribute build\\app\\outputs\\flutter-apk\\app-release.apk `
                         --app $env:FIREBASE_APP_ID `
                         --release-notes "New APK build from Jenkins!" `
-                        --groups $env:FIREBASE_TESTER_GROUP
+                        --groups $env:FIREBASE_TESTER_GROUP `
+                        --service-account-file $credentialsPath
                     
                     if ($LASTEXITCODE -ne 0) {
                         throw "Firebase distribution failed with exit code $LASTEXITCODE"
@@ -106,11 +107,12 @@ pipeline {
                     # Set the environment variable
                     $env:GOOGLE_APPLICATION_CREDENTIALS = $credentialsPath
                     
-                    # Distribute to Firebase
+                    # Distribute to Firebase with service account
                     firebase appdistribution:distribute build\\app\\outputs\\bundle\\release\\app-release.aab `
                         --app $env:FIREBASE_APP_ID `
                         --release-notes "New AAB build from Jenkins!" `
-                        --groups $env:FIREBASE_TESTER_GROUP
+                        --groups $env:FIREBASE_TESTER_GROUP `
+                        --service-account-file $credentialsPath
                     
                     if ($LASTEXITCODE -ne 0) {
                         throw "Firebase distribution failed with exit code $LASTEXITCODE"
