@@ -63,12 +63,23 @@ pipeline {
                     Write-Host "Firebase App ID: $env:FIREBASE_APP_ID"
                     Write-Host "Tester Group: $env:FIREBASE_TESTER_GROUP"
                     
+                    # Verify APK exists
+                    $apkPath = "build\\app\\outputs\\flutter-apk\\app-release.apk"
+                    if (Test-Path $apkPath) {
+                        $apkSize = (Get-Item $apkPath).Length / 1MB
+                        Write-Host "APK found: $apkPath (Size: $([math]::Round($apkSize, 2)) MB)"
+                    } else {
+                        throw "APK not found at: $apkPath"
+                    }
+                    
                     # Distribute to Firebase with service account
                     Write-Host "Starting Firebase distribution..."
-                    firebase appdistribution:distribute build\\app\\outputs\\flutter-apk\\app-release.apk `
+                    Write-Host "Using service account authentication via GOOGLE_APPLICATION_CREDENTIALS"
+                    firebase appdistribution:distribute $apkPath `
                         --app $env:FIREBASE_APP_ID `
                         --release-notes "New APK build from Jenkins!" `
-                        --groups $env:FIREBASE_TESTER_GROUP
+                        --groups $env:FIREBASE_TESTER_GROUP `
+                        --debug
                     
                     if ($LASTEXITCODE -ne 0) {
                         throw "Firebase distribution failed with exit code $LASTEXITCODE"
