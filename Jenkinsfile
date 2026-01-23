@@ -1,6 +1,29 @@
 pipeline {
     agent any
 
+    parameters {
+        string(
+            name: 'BRANCH',
+            defaultValue: 'main',
+            description: 'Enter the branch name to build (e.g., main, develop, feature/xyz)'
+        )
+        choice(
+            name: 'ENVIRONMENT',
+            choices: ['development', 'staging', 'production'],
+            description: 'Select the environment/mode for this build'
+        )
+        string(
+            name: 'VERSION',
+            defaultValue: '1.0.0',
+            description: 'Enter the version number (e.g., 1.0.0)'
+        )
+        text(
+            name: 'RELEASE_NOTES',
+            defaultValue: 'New APK build from Jenkins',
+            description: 'Enter release notes for this build'
+        )
+    }
+
     environment {
         FIREBASE_APP_ID = '1:999961822980:android:1d03ab3c4629ddc31f3251'
         FIREBASE_TESTER_GROUP = 'qa-test'
@@ -9,7 +32,11 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/tzrfabian/wp-fcm-test.git'
+                script {
+                    echo "Checking out branch: ${BRANCH}"
+                    echo "Environment: ${ENVIRONMENT}"
+                }
+                git branch: '${BRANCH}', url: 'https://github.com/tzrfabian/wp-fcm-test.git'
             }
         }
 
@@ -22,6 +49,9 @@ pipeline {
 
         stage('Build APK') {
             steps {
+                script {
+                    echo "Building APK for ${ENVIRONMENT} environment"
+                }
                 bat 'flutter build apk --release'
             }
         }
@@ -63,9 +93,15 @@ pipeline {
                     # Set the environment variable
                     $env:GOOGLE_APPLICATION_CREDENTIALS = $credentialsPath
                     
-                    Write-Host "GOOGLE_APPLICATION_CREDENTIALS set to: $env:GOOGLE_APPLICATION_CREDENTIALS"
+                    Write-Host "========================================="
+                    Write-Host "Build Information:"
+                    Write-Host "========================================="
+                    Write-Host "Branch: $env:BRANCH"
+                    Write-Host "Environment: $env:ENVIRONMENT"
+                    Write-Host "Version: $env:VERSION"
                     Write-Host "Firebase App ID: $env:FIREBASE_APP_ID"
                     Write-Host "Tester Group: $env:FIREBASE_TESTER_GROUP"
+                    Write-Host "========================================="
                     
                     # Verify APK exists
                     $apkPath = "build\\app\\outputs\\flutter-apk\\app-release.apk"
@@ -79,9 +115,10 @@ pipeline {
                     # Distribute to Firebase with service account
                     Write-Host "Starting Firebase distribution..."
                     Write-Host "Using service account authentication via GOOGLE_APPLICATION_CREDENTIALS"
+                    Write-Host "Release Notes: $env:RELEASE_NOTES"
                     firebase appdistribution:distribute $apkPath `
                         --app $env:FIREBASE_APP_ID `
-                        --release-notes "New APK build from Jenkins!" `
+                        --release-notes $env:RELEASE_NOTES `
                         --groups $env:FIREBASE_TESTER_GROUP `
                         --debug
                     
@@ -134,7 +171,7 @@ pipeline {
                     # Distribute to Firebase with service account
                     firebase appdistribution:distribute build\\app\\outputs\\bundle\\release\\app-release.aab `
                         --app $env:FIREBASE_APP_ID `
-                        --release-notes "New AAB build from Jenkins!" `
+                        --release-notes $env:RELEASE_NOTES `
                         --groups $env:FIREBASE_TESTER_GROUP
                     
                     if ($LASTEXITCODE -ne 0) {
@@ -153,7 +190,13 @@ pipeline {
         always {
             script {
                 if (!isUnix()) {
-                    echo "Skipping workspace cleanup on Windows to avoid file locking issues"
+                    echo "========================================="
+                    echo "Build Summary:"
+                    echo "========================================="
+                    echo "Branch: ${BRANCH}"
+                    echo "Environment: ${ENVIRONMENT}"
+                    echo "Version: ${VERSION}"
+                    echo "========================================="
                 } else {
                     cleanWs()
                 }
