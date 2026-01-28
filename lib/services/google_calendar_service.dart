@@ -14,7 +14,7 @@ class GoogleCalendarService {
   // This email will be used to create calendar events and send invitations to users
   // For service account impersonation, this must be a Google Workspace user
   static const String appSupportEmail = 'jendralpochin02@gmail.com';
-  
+
   // Set to true to use service account (automatic auth)
   // Set to false to use OAuth (user sign-in)
   static const bool useServiceAccount = true;
@@ -42,18 +42,21 @@ class GoogleCalendarService {
     try {
       // Load service account credentials from assets
       // You need to add your service account JSON to assets/service_account.json
-      final jsonString = await rootBundle.loadString('assets/service_account.json');
-      final credentials = auth.ServiceAccountCredentials.fromJson(json.decode(jsonString));
+      final jsonString = await rootBundle.loadString(
+        'assets/service_account.json',
+      );
+      final credentials = auth.ServiceAccountCredentials.fromJson(
+        json.decode(jsonString),
+      );
 
       // Create authenticated client with calendar scope
       // Note: For impersonation to work, you need Google Workspace with domain-wide delegation
-      _serviceAccountClient = await auth.clientViaServiceAccount(
-        credentials,
-        [calendar.CalendarApi.calendarScope],
-      );
+      _serviceAccountClient = await auth.clientViaServiceAccount(credentials, [
+        calendar.CalendarApi.calendarScope,
+      ]);
 
       _calendarApi = calendar.CalendarApi(_serviceAccountClient!);
-      
+
       print('✅ Service account initialized successfully');
       return true;
     } catch (error) {
@@ -68,19 +71,19 @@ class GoogleCalendarService {
     try {
       // Try to sign in silently first (if already authenticated)
       final account = await _googleSignIn.signInSilently();
-      
+
       if (account != null) {
         _supportAccount = account;
         print('✅ Support account signed in silently: ${account.email}');
-        
+
         // Get authentication headers
         final authHeaders = await account.authHeaders;
         final authenticateClient = GoogleAuthClient(authHeaders);
         _calendarApi = calendar.CalendarApi(authenticateClient);
-        
+
         return true;
       }
-      
+
       // If silent sign-in fails, prompt for sign-in
       return await _signInSupportAccount();
     } catch (error) {
@@ -130,10 +133,11 @@ class GoogleCalendarService {
   bool get isSignedIn => _calendarApi != null;
 
   /// Get support account email
-  String? get supportAccountEmail => useServiceAccount ? appSupportEmail : _supportAccount?.email;
+  String? get supportAccountEmail =>
+      useServiceAccount ? appSupportEmail : _supportAccount?.email;
 
   /// Create a calendar event with app support as initiator and user as attendee
-  /// 
+  ///
   /// Flow:
   /// 1. Service account creates the event
   /// 2. App support email is added as 1st attendee (call initiator)
@@ -151,7 +155,9 @@ class GoogleCalendarService {
   }) async {
     try {
       if (_calendarApi == null) {
-        print('❌ Calendar API not initialized. Please initialize support account first.');
+        print(
+          '❌ Calendar API not initialized. Please initialize support account first.',
+        );
         return false;
       }
 
@@ -189,13 +195,15 @@ class GoogleCalendarService {
         // App support as call initiator (1st attendee)
         calendar.EventAttendee()
           ..email = appSupportEmail
-          ..responseStatus = 'accepted'  // Auto-accept for support
+          ..responseStatus =
+              'accepted' // Auto-accept for support
           ..organizer = false
           ..comment = 'Call Initiator',
         // User as 2nd attendee
         calendar.EventAttendee()
           ..email = userEmail
-          ..responseStatus = 'needsAction'  // User needs to respond
+          ..responseStatus =
+              'needsAction' // User needs to respond
           ..organizer = false,
       ];
 
@@ -211,10 +219,13 @@ class GoogleCalendarService {
       print('📧 Calendar invitation sent to:');
       print('   - Call Initiator: $appSupportEmail');
       print('   - User: $userEmail');
-      
+
       if (createMeetLink && createdEvent.conferenceData?.entryPoints != null) {
         final meetLink = createdEvent.conferenceData!.entryPoints!
-            .firstWhere((e) => e.entryPointType == 'video', orElse: () => calendar.EntryPoint())
+            .firstWhere(
+              (e) => e.entryPointType == 'video',
+              orElse: () => calendar.EntryPoint(),
+            )
             .uri;
         print('🎥 Google Meet link: $meetLink');
       }

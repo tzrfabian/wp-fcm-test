@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import '../services/google_calendar_service.dart';
+import '../services/schedule_service.dart';
 
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key});
@@ -14,13 +14,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   DateTime selectedDate = DateTime.now();
   String selectedTime = '15:00 WIB';
   String verificationMethod = 'whatsapp';
-  final GoogleCalendarService _calendarService = GoogleCalendarService();
-  final TextEditingController _emailController = TextEditingController();
+  final ScheduleService _scheduleService = ScheduleService();
+  final TextEditingController _nameController = TextEditingController();
   bool _isLoading = false;
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _nameController.dispose();
     super.dispose();
   }
 
@@ -161,12 +161,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   }
 
   Future<void> _handleSubmit() async {
-    // Validate email
-    final userEmail = _emailController.text.trim();
-    if (userEmail.isEmpty || !userEmail.contains('@')) {
+    // Validate name
+    final userName = _nameController.text.trim();
+    if (userName.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('❌ Mohon masukkan email yang valid'),
+          content: Text('❌ Mohon masukkan nama Anda'),
           backgroundColor: Colors.red,
         ),
       );
@@ -181,24 +181,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       // Initialize Indonesian locale data
       await initializeDateFormatting('id_ID', null);
 
-      // Check if support account is signed in
-      if (!_calendarService.isSignedIn) {
-        final initialized = await _calendarService.initializeSupportAccount();
-        if (!initialized) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text(
-                  '❌ Gagal menghubungkan ke akun support. Silakan coba lagi.',
-                ),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-          return;
-        }
-      }
-
       // Parse the selected time
       final startTime = _parseTimeSlot(selectedTime);
       final endTime = startTime.add(
@@ -211,22 +193,18 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           : 'Video Call via Google Meet';
 
       final String description =
-          'Scheduled ${verificationMethod == 'whatsapp' ? 'WhatsApp' : 'Google Meet'} video call.\n\n'
+          'Jadwal ${verificationMethod == 'whatsapp' ? 'WhatsApp' : 'Google Meet'} video call.\n\n'
           'Tanggal: ${DateFormat('EEEE, dd MMMM yyyy', 'id_ID').format(selectedDate)}\n'
-          'Waktu: $selectedTime\n'
-          'Email Peserta: $userEmail\n\n'
-          'Anda akan menerima undangan kalender di email Anda.';
+          'Waktu: $selectedTime';
 
-      // Create calendar event and send invitation to user
-      final success = await _calendarService.createCalendarEventForUser(
-        userEmail: userEmail,
+      // Opens user's calendar app to add event
+      final success = await _scheduleService.createSchedule(
+        userName: userName,
         title: title,
         description: description,
         startTime: startTime,
         endTime: endTime,
         location: verificationMethod == 'whatsapp' ? 'WhatsApp' : 'Google Meet',
-        createMeetLink:
-            verificationMethod == 'googlemeet', // Auto-generate Meet link
       );
 
       if (mounted) {
@@ -241,7 +219,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Tanggal: ${DateFormat('EEEE, dd MMMM yyyy').format(selectedDate)}',
+                    'Tanggal: ${DateFormat('EEEE, dd MMMM yyyy', 'id_ID').format(selectedDate)}',
                   ),
                   const SizedBox(height: 8),
                   Text('Waktu: $selectedTime'),
@@ -249,23 +227,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   Text(
                     'Metode: ${verificationMethod == 'whatsapp' ? 'WhatsApp' : 'Google Meet'}',
                   ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Peserta:',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '1. ${GoogleCalendarService.appSupportEmail} (Host)',
-                    style: const TextStyle(fontSize: 13),
-                  ),
-                  Text(
-                    '2. $userEmail',
-                    style: const TextStyle(fontSize: 13),
-                  ),
+                  const SizedBox(height: 8),
+                  Text('Nama: $userName'),
                   const SizedBox(height: 16),
                   const Text(
-                    '📧 Undangan kalender telah dikirim ke kedua email peserta. Silakan cek inbox atau spam folder.',
+                    '📅 Jadwal telah ditambahkan ke kalender Anda.',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey,
@@ -279,7 +245,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   onPressed: () {
                     Navigator.pop(context);
                     // Clear form
-                    _emailController.clear();
+                    _nameController.clear();
                   },
                   child: const Text('OK'),
                 ),
@@ -289,8 +255,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('❌ Gagal membuat jadwal. Silakan coba lagi.'),
-              backgroundColor: Colors.red,
+              content: Text('❌ Jadwal dibatalkan atau gagal ditambahkan.'),
+              backgroundColor: Colors.orange,
             ),
           );
         }
@@ -432,25 +398,24 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               ),
               const SizedBox(height: 24),
 
-              // Email Input
+              // Name Input
               const Text(
-                'Email Anda',
+                'Nama Anda',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
               TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
+                controller: _nameController,
+                keyboardType: TextInputType.name,
+                textCapitalization: TextCapitalization.words,
                 decoration: InputDecoration(
-                  hintText: 'contoh@email.com',
-                  prefixIcon: const Icon(Icons.email_outlined),
+                  hintText: 'Masukkan nama lengkap',
+                  prefixIcon: const Icon(Icons.person_outline),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                   filled: true,
                   fillColor: Colors.grey[100],
-                  helperText: 'Undangan kalender akan dikirim ke email ini',
-                  helperStyle: const TextStyle(fontSize: 11),
                 ),
               ),
               const SizedBox(height: 24),

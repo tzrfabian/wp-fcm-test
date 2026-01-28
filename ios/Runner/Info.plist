@@ -45,5 +45,8 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- Calendar Permission (for auto-save schedule events) -->
+	<key>NSCalendarsUsageDescription</key>
+	<string>Aplikasi ini membutuhkan akses kalender untuk menyimpan jadwal video call Anda.</string>
 </dict>
 </plist>

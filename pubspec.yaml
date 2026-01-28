@@ -48,11 +48,16 @@ dependencies:
   shared_preferences: ^2.3.3
   intl: ^0.19.0
   
-  # Google Calendar Integration
+  # Google Calendar Integration (legacy - kept for reference)
   googleapis: ^13.2.0
   googleapis_auth: ^1.6.0
   google_sign_in: ^6.2.2
   url_launcher: ^6.3.1
+  
+  # Device Calendar - Add events to user's phone calendar (no sign-in needed)
+  # add_2_calendar: ^3.0.1  # Opens calendar app, user must tap Save
+  device_calendar: ^4.3.3    # Auto-saves directly, requires calendar permission
+  timezone: ^0.9.4           # Required for device_calendar TZDateTime
   
   # Environment Variables (for secure config)
   flutter_dotenv: ^5.2.1
