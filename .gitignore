@@ -55,6 +55,10 @@ firebase_options.dart
 .env.local
 .env.*.local
 
+# Service Account Credentials (keep secure!)
+assets/service_account.json
+google-services.json
+
 # IDE
 .vscode/
 .idea/

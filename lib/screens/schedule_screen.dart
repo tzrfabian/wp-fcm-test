@@ -249,11 +249,23 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   Text(
                     'Metode: ${verificationMethod == 'whatsapp' ? 'WhatsApp' : 'Google Meet'}',
                   ),
-                  const SizedBox(height: 8),
-                  Text('Email: $userEmail'),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Peserta:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '1. ${GoogleCalendarService.appSupportEmail} (Host)',
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                  Text(
+                    '2. $userEmail',
+                    style: const TextStyle(fontSize: 13),
+                  ),
                   const SizedBox(height: 16),
                   const Text(
-                    '📧 Undangan kalender telah dikirim ke email Anda. Silakan cek inbox atau spam folder.',
+                    '📧 Undangan kalender telah dikirim ke kedua email peserta. Silakan cek inbox atau spam folder.',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey,
